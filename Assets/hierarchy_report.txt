@@ -1,0 +1,2 @@
+=== REPORTE DE JERARQUIA Y POSICIONES ===
+NO SE ENCONTRO el objeto 'bloque9' en la escena!

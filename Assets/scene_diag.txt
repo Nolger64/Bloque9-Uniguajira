@@ -1,0 +1,2 @@
+=== DIAGNOSTICO COMPLETO (Escena: '', path: '') ===
+Root objects en la escena (0):

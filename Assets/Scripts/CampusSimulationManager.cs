@@ -4,6 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Administrador del flujo, generación y monitoreo de estudiantes en el Bloque 9.
+/// Coordina la generación orgánica en el perímetro, la asignación de aulas y la interacción con puertas.
 /// </summary>
 public class CampusSimulationManager : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class CampusSimulationManager : MonoBehaviour
 
     private List<StudentAgent> activeStudents = new List<StudentAgent>();
     private List<GameObject> studentTemplates = new List<GameObject>();
+    private List<DoorController> registeredDoors = new List<DoorController>();
     private Transform studentContainer;
     private float nextSpawnTime = 0f;
 
@@ -40,26 +42,29 @@ public class CampusSimulationManager : MonoBehaviour
         new Vector3(38f, 0f, -28f)   // 7. Andén Extremo Este
     };
 
-    // 14 Puertas de Salones en los dos corredores del Bloque 9
+    // 17 Puertas exactas de Salones en la Planta Baja del Bloque 9
     private Vector3[] classroomDoors = new Vector3[]
     {
-        // Corredor Sur (Z = -6.8m)
-        new Vector3(-16.6f, 0f, -6.8f),
-        new Vector3(-11.6f, 0f, -6.8f),
-        new Vector3(-6.6f, 0f, -6.8f),
-        new Vector3(-1.6f, 0f, -6.8f),
-        new Vector3(6.6f, 0f, -6.8f),
-        new Vector3(11.6f, 0f, -6.8f),
-        new Vector3(16.6f, 0f, -6.8f),
+        // Corredor Sur (Z = -6.80m) - 8 Puertas
+        new Vector3(-21.625f, 0f, -6.80f),
+        new Vector3(-16.625f, 0f, -6.80f),
+        new Vector3(-6.625f,  0f, -6.80f),
+        new Vector3(-1.625f,  0f, -6.80f),
+        new Vector3(3.375f,   0f, -6.80f),
+        new Vector3(8.375f,   0f, -6.80f),
+        new Vector3(13.375f,  0f, -6.80f),
+        new Vector3(18.375f,  0f, -6.80f),
 
-        // Corredor Norte (Z = +6.8m)
-        new Vector3(-16.6f, 0f, 6.8f),
-        new Vector3(-11.6f, 0f, 6.8f),
-        new Vector3(-6.6f, 0f, 6.8f),
-        new Vector3(-1.6f, 0f, 6.8f),
-        new Vector3(6.6f, 0f, 6.8f),
-        new Vector3(11.6f, 0f, 6.8f),
-        new Vector3(16.6f, 0f, 6.8f)
+        // Corredor Norte (Z = +6.80m) - 9 Puertas
+        new Vector3(-21.625f, 0f, 6.80f),
+        new Vector3(-16.625f, 0f, 6.80f),
+        new Vector3(-11.625f, 0f, 6.80f),
+        new Vector3(-6.625f,  0f, 6.80f),
+        new Vector3(-1.625f,  0f, 6.80f),
+        new Vector3(3.375f,   0f, 6.80f),
+        new Vector3(8.375f,   0f, 6.80f),
+        new Vector3(13.375f,  0f, 6.80f),
+        new Vector3(18.375f,  0f, 6.80f)
     };
 
     private Vector3[] leavePoints = new Vector3[]
@@ -83,6 +88,7 @@ public class CampusSimulationManager : MonoBehaviour
 
     public int StudentsInside => studentsInside;
     public int ActiveStudentsCount => activeStudents.Count;
+    public List<StudentAgent> ActiveStudents => activeStudents;
     public int TotalExited => totalExited;
     public bool IsPaused => isPaused;
 
@@ -105,7 +111,39 @@ public class CampusSimulationManager : MonoBehaviour
         }
         studentContainer = containerObj.transform;
 
+        RefreshDoors();
         InitializeAndDistributeStudents();
+    }
+
+    /// <summary>
+    /// Busca y registra todos los controladores de puertas de la planta baja.
+    /// </summary>
+    public void RefreshDoors()
+    {
+        registeredDoors.Clear();
+        DoorController[] found = FindObjectsByType<DoorController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        registeredDoors.AddRange(found);
+        Debug.Log($"<color=#00FFAA>[Bloque 9 Manager]</color> {registeredDoors.Count} puertas interactivas registradas en el campus.");
+    }
+
+    /// <summary>
+    /// Retorna el controlador de la puerta más cercano a la coordenada indicada.
+    /// </summary>
+    public DoorController GetNearestDoor(Vector3 pos)
+    {
+        DoorController best = null;
+        float minDist = float.MaxValue;
+        for (int i = 0; i < registeredDoors.Count; i++)
+        {
+            if (registeredDoors[i] == null) continue;
+            float d = Vector3.Distance(registeredDoors[i].DoorwayCenter, pos);
+            if (d < minDist)
+            {
+                minDist = d;
+                best = registeredDoors[i];
+            }
+        }
+        return best;
     }
 
     /// <summary>
@@ -138,7 +176,6 @@ public class CampusSimulationManager : MonoBehaviour
             GameObject s = existing[i];
             s.SetActive(true);
 
-            // Asegurar que el SkinnedMeshRenderer actualice siempre
             SkinnedMeshRenderer smr = s.GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (smr != null)
             {
@@ -157,6 +194,7 @@ public class CampusSimulationManager : MonoBehaviour
             Vector3 door = classroomDoors[Random.Range(0, classroomDoors.Length)];
             Vector3 leave = leavePoints[Random.Range(0, leavePoints.Length)];
             float stay = averageStayTime * Random.Range(0.85f, 1.25f);
+            DoorController doorCtrl = GetNearestDoor(door);
 
             agent.Initialize(
                 this,
@@ -164,7 +202,8 @@ public class CampusSimulationManager : MonoBehaviour
                 door,
                 leave,
                 stay,
-                studentSpeed
+                studentSpeed,
+                doorCtrl
             );
 
             if (!activeStudents.Contains(agent))
@@ -195,6 +234,7 @@ public class CampusSimulationManager : MonoBehaviour
         Vector3 door = classroomDoors[Random.Range(0, classroomDoors.Length)];
         Vector3 leave = leavePoints[Random.Range(0, leavePoints.Length)];
         float stay = averageStayTime * Random.Range(0.85f, 1.25f);
+        DoorController doorCtrl = GetNearestDoor(door);
 
         GameObject studentObj = null;
 
@@ -204,7 +244,6 @@ public class CampusSimulationManager : MonoBehaviour
             studentObj = Instantiate(template, spawn, Quaternion.identity, studentContainer);
             studentObj.SetActive(true);
 
-            // Remapear huesos del SkinnedMeshRenderer al clon para evitar que se vuelva invisible
             RemapBonesForClone(studentObj);
         }
         else
@@ -227,7 +266,8 @@ public class CampusSimulationManager : MonoBehaviour
             door,
             leave,
             stay,
-            studentSpeed
+            studentSpeed,
+            doorCtrl
         );
 
         activeStudents.Add(agent);
@@ -330,13 +370,16 @@ public class CampusSimulationManager : MonoBehaviour
             Vector3 newSpawn = perimeterSpawnPoints[Random.Range(0, perimeterSpawnPoints.Length)];
             Vector3 door = classroomDoors[Random.Range(0, classroomDoors.Length)];
             Vector3 leave = leavePoints[Random.Range(0, leavePoints.Length)];
+            DoorController doorCtrl = GetNearestDoor(door);
+
             agent.Initialize(
                 this,
                 newSpawn,
                 door,
                 leave,
                 averageStayTime * Random.Range(0.85f, 1.25f),
-                studentSpeed
+                studentSpeed,
+                doorCtrl
             );
             activeStudents.Add(agent);
         }

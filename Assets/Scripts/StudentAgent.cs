@@ -5,7 +5,8 @@ using UnityEngine.AI;
 
 /// <summary>
 /// Agente de IA para cada estudiante del Bloque 9.
-/// Navega por etapas hacia la entrada, patio y aulas, y reproduce animación humanoide real.
+/// Navega de forma orgánica por el campus hacia la entrada, patio y aulas asignadas.
+/// Interactúa de forma realista con las puertas de los salones (espera a que abran antes de cruzar).
 /// </summary>
 public class StudentAgent : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class StudentAgent : MonoBehaviour
 
     [Header("Referencias")]
     public NavMeshAgent navAgent;
+    public DoorController assignedDoorController;
 
     // Rutas de IA
     private List<Vector3> currentWaypoints = new List<Vector3>();
@@ -108,21 +110,23 @@ public class StudentAgent : MonoBehaviour
         }
     }
 
-    public void Initialize(CampusSimulationManager simManager, Vector3 spawnPos, Vector3 doorPos, Vector3 leavePos, float stayTime, float speed)
+    public void Initialize(CampusSimulationManager simManager, Vector3 spawnPos, Vector3 doorPos, Vector3 leavePos, float stayTime, float speed, DoorController doorCtrl = null)
     {
         manager = simManager;
         targetDoorPosition = doorPos;
         assignedLeavePoint = leavePos;
         stayDuration = stayTime;
         moveSpeed = speed;
+        assignedDoorController = doorCtrl != null ? doorCtrl : (manager != null ? manager.GetNearestDoor(doorPos) : null);
 
         transform.position = spawnPos;
         isInsideBuilding = false;
         forceExit = false;
         timerInClass = 0f;
 
-        float roomZOffset = doorPos.z > 0 ? 2.5f : -2.5f;
-        assignedClassroomInterior = new Vector3(doorPos.x + Random.Range(-1f, 1f), doorPos.y, doorPos.z + roomZOffset);
+        // Interior del salón (hacia el fondo del aula)
+        float roomZOffset = doorPos.z > 0 ? 2.8f : -2.8f;
+        assignedClassroomInterior = new Vector3(doorPos.x + Random.Range(-0.8f, 0.8f), doorPos.y, doorPos.z + roomZOffset);
 
         EnsureVisualMarker();
         BuildEntrancePath(spawnPos);
@@ -169,7 +173,7 @@ public class StudentAgent : MonoBehaviour
         currentWaypoints.Add(lobbyPoint);
 
         // Etapa 5: Corredor frente a la Puerta del Salón
-        float corridorZ = targetDoorPosition.z > 0 ? 5.0f : -5.0f;
+        float corridorZ = targetDoorPosition.z > 0 ? 5.2f : -5.2f;
         Vector3 corridorPoint = new Vector3(targetDoorPosition.x, startPos.y, corridorZ);
         currentWaypoints.Add(corridorPoint);
 
@@ -188,9 +192,9 @@ public class StudentAgent : MonoBehaviour
         currentWaypoints.Clear();
         currentWaypointIndex = 0;
 
-        float corridorZ = targetDoorPosition.z > 0 ? 5.0f : -5.0f;
+        float corridorZ = targetDoorPosition.z > 0 ? 5.2f : -5.2f;
 
-        // 1. Salir del salón hacia la puerta
+        // 1. Salir del salón hacia el umbral de la puerta
         currentWaypoints.Add(new Vector3(targetDoorPosition.x, transform.position.y, targetDoorPosition.z));
 
         // 2. Salir al corredor
@@ -231,7 +235,6 @@ public class StudentAgent : MonoBehaviour
     {
         if (currentWaypoints == null || currentWaypoints.Count == 0) return;
 
-        // Comprobación de seguridad contra desbordamiento de índice
         if (currentWaypointIndex >= currentWaypoints.Count)
         {
             OnPathFinished();
@@ -240,12 +243,27 @@ public class StudentAgent : MonoBehaviour
 
         Vector3 target = currentWaypoints[currentWaypointIndex];
 
+        // Detección e interacción con puerta de aula
+        float distToDoor = Vector3.Distance(transform.position, targetDoorPosition);
+        if (distToDoor < 2.5f && assignedDoorController != null)
+        {
+            assignedDoorController.OpenDoor(3.0f);
+
+            // Si está muy cerca del umbral (< 1.1m) y la puerta aún no ha abierto suficiente, pausar avance
+            if (distToDoor < 1.1f && !assignedDoorController.IsOpen)
+            {
+                // Esperar a que la puerta abra para no atravesarla
+                currentAnimSpeed = Mathf.MoveTowards(currentAnimSpeed, 0f, Time.deltaTime * 5f);
+                return;
+            }
+        }
+
         // Detección en plano horizontal XZ
         Vector2 currentXZ = new Vector2(transform.position.x, transform.position.z);
         Vector2 targetXZ = new Vector2(target.x, target.z);
         float dist = Vector2.Distance(currentXZ, targetXZ);
 
-        float threshold = (currentWaypointIndex == currentWaypoints.Count - 1) ? 0.35f : 0.65f;
+        float threshold = (currentWaypointIndex == currentWaypoints.Count - 1) ? 0.40f : 0.65f;
 
         if (dist <= threshold)
         {

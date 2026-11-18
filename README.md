@@ -6,12 +6,17 @@ Simulación interactiva en 3D en **Unity 6 (URP)** del flujo, ingreso, permanenc
 
 ## 🏛️ Características del Proyecto
 
-- **Modelo Arquitectónico:**
-  - Réplica del Bloque 9 de Uniguajira con colores institucionales (Amarillo y Rojo), 3 plantas, patio central, escaleras curvas, rampas y corredores de salones modulares.
-  - Vía y andén exterior perimetral.
+- **Modelo Arquitectónico Modular:**
+  - Réplica del Bloque 9 de Uniguajira con colores institucionales (Amarillo y Rojo), 4 plantas, patio central, escaleras curvas, rampas y corredores de salones modulares.
+  - Vía y andén exterior perimetral con 7 puntos de spawn orgánico.
+- **Sistema de Puertas Interactivas (`DoorController`):**
+  - Todas las 68 puertas del edificio (17 en planta baja) han sido desacopladas en elementos interactivos individuales con bisagra pivotante en el marco.
+  - Apertura suave de 90° hacia el interior de las aulas cuando un estudiante se aproxima a menos de 2.2 metros.
+  - Detección física y lógica: los estudiantes esperan a que la puerta comience a abrirse antes de cruzar el umbral, eliminando cualquier traspaso de geometría sólida.
+  - Cierre automático inteligente con retardo una vez que el estudiante ingresa al aula o sale al corredor.
 - **Simulación de Estudiantes (NPCs):**
   - Sistema de navegación inteligente multi-etapa:
-    - *Spawn Perimétrico* $\rightarrow$ *Aproximación a la Plaza* $\rightarrow$ *Pórtico Principal* $\rightarrow$ *Patio Central* $\rightarrow$ *Corredores* $\rightarrow$ *Puertas de Salón* $\rightarrow$ *En Clase* $\rightarrow$ *Ruta Inversa de Salida*.
+    - *Spawn Perimétrico* $\rightarrow$ *Aproximación a la Plaza* $\rightarrow$ *Pórtico Principal* $\rightarrow$ *Patio Central* $\rightarrow$ *Corredores* $\rightarrow$ *Interacción y Apertura de Puerta* $\rightarrow$ *En Clase* $\rightarrow$ *Salida Interactiva por Puerta* $\rightarrow$ *Ruta Exterior de Retiro*.
   - Animación procedimental cinemática humanoide de 15 huesos (movimiento real de piernas, rodillas, braceo y caderas).
   - Marcadores visuales de alta visibilidad para seguimiento a distancia.
   - Generación dinámica y variada con diferentes vestimentas y morrales.
@@ -20,6 +25,7 @@ Simulación interactiva en 3D en **Unity 6 (URP)** del flujo, ingreso, permanenc
   - Modificación del tiempo promedio de estancia en el bloque (2 a 60 segundos).
   - Contador en vivo de estudiantes dentro del edificio y métricas de tránsito exterior.
   - Botones de acción rápida: *+ Entrar 1*, *🚨 Evacuar / Salir Todos*, *Pausar / Reanudar*.
+  - Minimizable y desplegable en cualquier momento con la tecla `[Tab]`.
 - **Control de Cámara Panorámica:**
   - Tecla `[1]`: Vista frontal exterior (calle, andén y fachada).
   - Tecla `[2]`: Vista del patio central y corredores de aulas.

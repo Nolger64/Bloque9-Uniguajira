@@ -60,7 +60,14 @@ public static class Bloque9SetupEditor
             }
         }
 
-        // 4. Colisionadores en suelos
+        // 4. Configurar todas las puertas interactivas
+        Bloque9SceneAutoInitializer.SetupAllDoors();
+        if (manager != null)
+        {
+            manager.RefreshDoors();
+        }
+
+        // 5. Colisionadores en suelos
         EnsureCollider("Piso_Planta_Baja");
         EnsureCollider("Andenes_y_Via");
         EnsureCollider("Terreno_Cesped");
@@ -69,16 +76,6 @@ public static class Bloque9SetupEditor
         // Guardar escena
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
-
-        EditorUtility.DisplayDialog(
-            "Bloque 9 - Simulación y Cámara Listas",
-            "¡La cámara ha sido ubicada en posición panorámica y los estudiantes están activos!\n\n" +
-            "• Haz clic en Play (▶) para ver la simulación.\n" +
-            "• Verás a los estudiantes caminando desde el andén exterior hacia el pórtico y salones.\n" +
-            "• Presiona [1], [2] o [3] para alternar entre la fachada exterior, el patio interior y la vista aérea.\n" +
-            "• Presiona [Tab] para minimizar o mostrar el panel.",
-            "¡Excelente!"
-        );
 
         Debug.Log("<color=#00FFAA>[Bloque 9 Setup]</color> ¡Configuración completada y escena guardada!");
     }

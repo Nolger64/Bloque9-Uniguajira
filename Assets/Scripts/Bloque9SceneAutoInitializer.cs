@@ -2,14 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// Inicializador automático de la escena Bloque 9.
-/// Se ejecuta automáticamente al entrar en PlayMode o desde el editor.
+/// Se ejecuta automáticamente al entrar en PlayMode o al cargar la escena.
+/// Configura la cámara panorámica, las puertas interactivas y los colisionadores de suelo.
 /// </summary>
 public class Bloque9SceneAutoInitializer : MonoBehaviour
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     public static void AutoInitializeScene()
     {
-        Debug.Log("<color=#FFDD00>[Bloque 9]</color> Inicializando sistema de simulación...");
+        Debug.Log("<color=#FFDD00>[Bloque 9]</color> Inicializando sistema de simulación y puertas interactivas...");
 
         // 1. Configurar la Cámara Principal con vista panorámica óptima
         Camera mainCam = Camera.main;
@@ -27,7 +28,7 @@ public class Bloque9SceneAutoInitializer : MonoBehaviour
         }
 
         // 2. Configurar o encontrar el Manager de Simulación
-        CampusSimulationManager manager = FindFirstObjectByType<CampusSimulationManager>();
+        CampusSimulationManager manager = Object.FindFirstObjectByType<CampusSimulationManager>();
         if (manager == null)
         {
             GameObject managerObj = new GameObject("--- SISTEMA_SIMULACION_BLOQUE9 ---");
@@ -42,13 +43,49 @@ public class Bloque9SceneAutoInitializer : MonoBehaviour
             }
         }
 
-        // 3. Colisionadores en suelos
+        // 3. Configurar todas las puertas interactivas del Bloque 9
+        SetupAllDoors();
+
+        if (manager != null)
+        {
+            manager.RefreshDoors();
+        }
+
+        // 4. Colisionadores en suelos
         AddColliderIfMissing("Piso_Planta_Baja");
         AddColliderIfMissing("Andenes_y_Via");
         AddColliderIfMissing("Terreno_Cesped");
         AddColliderIfMissing("Losas_Pisos_Blancas");
 
-        Debug.Log("<color=#00FFAA>[Bloque 9]</color> Escena y cámara configuradas con éxito. Pulsa [Tab] para minimizar el panel.");
+        Debug.Log("<color=#00FFAA>[Bloque 9]</color> Escena, puertas y cámara configuradas con éxito. Pulsa [Tab] para minimizar el panel.");
+    }
+
+    /// <summary>
+    /// Recorre todos los objetos que representan puertas en el campus y les asegura su DoorController.
+    /// </summary>
+    public static void SetupAllDoors()
+    {
+        GameObject b9 = GameObject.Find("bloque9");
+        Transform[] allTransforms = b9 != null 
+            ? b9.GetComponentsInChildren<Transform>(true)
+            : Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        int doorCount = 0;
+        foreach (var t in allTransforms)
+        {
+            if (t.name.StartsWith("Puerta_") && !t.name.EndsWith("_Mesh"))
+            {
+                DoorController dc = t.GetComponent<DoorController>();
+                if (dc == null)
+                {
+                    dc = t.gameObject.AddComponent<DoorController>();
+                }
+                dc.InitializeDoor();
+                doorCount++;
+            }
+        }
+
+        Debug.Log($"<color=#00FFAA>[Bloque 9 Puertas]</color> {doorCount} puertas configuradas con controladores automáticos de apertura/cierre.");
     }
 
     private static void AddColliderIfMissing(string objectName)
